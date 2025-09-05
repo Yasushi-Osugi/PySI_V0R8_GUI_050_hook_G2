@@ -1,0 +1,13 @@
+Product_name,node_name,material_cost_ratio
+JPN_RICE_1,supply_point,3.24
+JPN_RICE_1,MOMJPN,3.24
+JPN_RICE_1,PADJPN,0.2469
+JPN_Koshihikari,supply_point,3.24
+JPN_Koshihikari,MOMKosihikari,3.24
+JPN_Koshihikari,PADKosihikari,0.2469
+CAL_RICE_1,supply_point,3.24
+CAL_RICE_1,MOMCAL,3.24
+CAL_RICE_1,PADCAL,0.1233
+Reserv_Rice,supply_point,3.24
+Reserv_Rice,MOMGSJP,3.24
+Reserv_Rice,PADGSJP,0.2469

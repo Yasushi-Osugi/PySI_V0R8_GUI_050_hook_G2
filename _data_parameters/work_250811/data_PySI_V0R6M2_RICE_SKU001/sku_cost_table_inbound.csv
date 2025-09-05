@@ -1,0 +1,9 @@
+node_name,product_name,price_sales_shipped,cost_total,profit,marketing_promotion,sales_admin_cost,SGA_total,logistics_costs,warehouse_cost,direct_materials_costs,purchase_total_cost,prod_indirect_labor,prod_indirect_others,direct_labor_costs,depreciation_others,manufacturing_overhead
+MOMCAL,CAL_RICE_1,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+PADCAL,CAL_RICE_1,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+MOMJPN,JPN_RICE_1,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+PADJPN,JPN_RICE_1,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+MOMKosihikari,JPN_Koshihikari,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+PADKosihikari,JPN_Koshihikari,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+MOMGSJP,Reserv_Rice,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45
+PADGSJP,Reserv_Rice,1,0.95,0.05,0,0.1,0.1,0.05,0,0.3,0.35,0.03,0,0.27,0.15,0.45

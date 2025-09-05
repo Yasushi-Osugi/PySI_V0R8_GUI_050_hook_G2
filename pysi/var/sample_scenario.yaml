@@ -1,0 +1,45 @@
+# sample_scenario.yaml
+scenario: "Baseline"
+db: "var/psi.sqlite"
+
+calendar:
+  from_csv: "data/S_month_data.csv"  # 省略可: plan_year_st/plan_range をCSVから推定
+  # plan_year_st: 2026
+  # plan_range: 5
+
+etl:
+  csv: "data/S_month_data.csv"
+  default_lot_size: 50
+
+mode: "leaf"               # "leaf" or "tree"
+network: null              # "pysi.network.factory:factory" (tree時に使用)
+write_all_nodes: false
+
+actions:
+  # V: Volume（需要調整）
+  - type: demand_scale
+    product: "RICE"
+    node: "TOKYO"
+    from: "2026-W10"
+    to:   "2026-W20"
+    factor: 1.10           # +10%
+
+  # C: Capacity（休暇・停止）
+  - type: shutdown_weeks
+    node: "PLANT_A"
+    weeks: [ "2026-W30", "2026-W31", "2026-W32" ]
+
+  # C: LT変更
+  - type: leadtime_set
+    node: "PORT_JP"
+    product: "RICE"
+    leadtime: 3            # 週
+
+  # M: Mix（ネットワーク入替・将来拡張用）
+  # - type: network_swap ...
+  
+report:
+  outdir: "var/report"
+  fmt: "png"
+  targets:
+    - { node: "TOKYO", product: "RICE", layer: "demand" }

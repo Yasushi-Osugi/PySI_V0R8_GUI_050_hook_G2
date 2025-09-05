@@ -1,0 +1,16 @@
+node_name,MOMJPN,MOMGSJP,MOMCAL,PADJPN,PADGSJP,PADCAL
+price_sales_shipped,1,1,1,1,1,1
+cost_total,0.95,0.95,0.95,0.95,0.95,0.95
+profit,0.05,0.05,0.05,0.05,0.05,0.05
+marketing_promotion,0,0,0,0,0,0
+sales_admin_cost,0.1,0.1,0.1,0.1,0.1,0.1
+SGA_total,0.1,0.1,0.1,0.1,0.1,0.1
+logistics_costs,0.05,0.05,0.05,0.05,0.05,0.05
+warehouse_cost,0,0,0,0,0,0
+direct_materials_costs,0.3,0.3,0.3,0.3,0.3,0.3
+purchase_total_cost,0.35,0.35,0.35,0.35,0.35,0.35
+prod_indirect_labor,0.03,0.03,0.03,0.03,0.03,0.03
+prod_indirect_others,0,0,0,0,0,0
+direct_labor_costs,0.27,0.27,0.27,0.27,0.27,0.27
+depreciation_others,0.15,0.15,0.15,0.15,0.15,0.15
+manufacturing_overhead,0.45,0.45,0.45,0.45,0.45,0.45

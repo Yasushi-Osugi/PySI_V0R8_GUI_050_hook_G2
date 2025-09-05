@@ -1,0 +1,473 @@
+
+
+
+
+
+
+class PSIPlannerApp:
+    def __init__(self, root, config):
+    #def __init__(self, root):
+
+        self.root = root
+        self.config = config
+        self.root.title(self.config.APP_NAME)
+        
+        self.tree_structure = None
+
+        # 必ず setup_ui を先に呼び出す
+        self.setup_ui()
+        
+        # 必要な初期化処理を後から呼び出す
+        self.initialize_parameters()
+
+        #@ STOP moved to config.py
+        #self.lot_size     = 2000      # 初期値
+        #self.plan_year_st = 2022      # 初期値
+        #self.plan_range   = 2         # 初期値
+        #self.pre_proc_LT  = 13        # 初期値 13week = 3month
+        #self.market_potential = 0     # 初期値 0
+        #self.target_share     = 0.5   # 初期値 0.5 = 50%
+        #self.total_supply     = 0     # 初期値 0
+
+
+        # ********************************
+        # PSI planner
+        # ********************************
+        self.outbound_data = None
+        self.inbound_data = None
+
+        # PySI tree
+        self.root_node_outbound = None
+        self.nodes_outbound     = None
+        self.leaf_nodes_out     = []
+
+        self.root_node_inbound  = None
+        self.nodes_inbound      = None
+        self.leaf_nodes_in      = []
+
+        self.root_node_out_opt  = None
+        self.nodes_out_opt      = None
+        self.leaf_nodes_opt     = []
+
+
+        self.optimized_root     = None
+        self.optimized_nodes    = None
+
+
+
+        self.node_psi_dict_In4Dm = {}  # 需要側 PSI 辞書
+        self.node_psi_dict_In4Sp = {}  # 供給側 PSI 辞書
+
+
+
+        # Evaluation on PSI
+        self.total_revenue = 0
+        self.total_profit  = 0
+        self.profit_ratio  = 0
+
+        # view
+        self.G = None
+
+        # Optimise
+        self.Gdm_structure = None
+
+        self.Gdm = None
+        self.Gsp = None
+
+        self.pos_E2E = None
+
+        self.flowDict_opt = {} #None
+        self.flowCost_opt = {} #None
+
+        self.total_supply_plan = 0
+
+        # loading files
+        self.directory = None
+        self.load_directory = None
+
+        self.base_leaf_name = None
+
+        # supply_plan / decoupling / buffer stock
+        self.decouple_node_dic = {}
+
+        self.decouple_node_selected = []
+
+
+
+
+
+
+    def setup_ui(self):
+
+        print("setup_ui is processing")
+
+        #@250701 ADD
+        # ウィンドウを最大化（Windows限定）
+        self.root.state("zoomed")
+
+
+        # フォントの設定
+        custom_font = tkfont.Font(family="Helvetica", size=12)
+
+        # メニュー全体のフォントサイズを設定
+        self.root.option_add('*TearOffMenu*Font', custom_font)
+        self.root.option_add('*Menu*Font', custom_font)
+
+        # メニューバーの作成
+        menubar = tk.Menu(self.root)
+
+        # スタイルの設定
+        style = ttk.Style()
+        style.configure("TMenubutton", font=("Helvetica", 12))
+
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="OPEN: select Directory", command=self.load_data_files)
+        file_menu.add_separator()
+        file_menu.add_command(label="SAVE: to Directory", command=self.save_to_directory)
+
+        file_menu.add_command(label="LOAD: from Directory", command=self.load_from_directory)
+
+        file_menu.add_separator()
+        file_menu.add_command(label="EXIT", command=self.on_exit)
+
+        menubar.add_cascade(label=" FILE  ", menu=file_menu)
+
+
+        # Optimize Parameter menu
+        optimize_menu = tk.Menu(menubar, tearoff=0)
+        optimize_menu.add_command(label="Save Objective Value", command=self.Save_Objective_Value)
+
+        optimize_menu.add_separator()
+
+        optimize_menu.add_command(label="Weight: Cost Stracture on Common Plan Unit", command=self.show_cost_stracture_bar_graph)
+        optimize_menu.add_command(label="Capacity: Market Demand", command=self.show_month_data_csv)
+
+        menubar.add_cascade(label="Optimize Parameter", menu=optimize_menu)
+
+
+
+        # Report menu
+        report_menu = tk.Menu(menubar, tearoff=0)
+
+        report_menu.add_command(label="Outbound: PSI to csv file", command=self.outbound_psi_to_csv)
+
+        report_menu.add_command(label="Outbound: Lot by Lot data to csv", command=self.outbound_lot_by_lot_to_csv)
+
+        report_menu.add_separator()
+
+        report_menu.add_command(label="Inbound: PSI to csv file", command=self.inbound_psi_to_csv)
+        report_menu.add_command(label="Inbound: Lot by Lot data to csv", command=self.inbound_lot_by_lot_to_csv)
+
+        report_menu.add_separator()
+
+        report_menu.add_separator()
+
+        report_menu.add_command(label="Value Chain: Cost Stracture a Lot", command=self.lot_cost_structure_to_csv)
+
+        report_menu.add_command(label="Supply Chain: Revenue Profit", command=self.supplychain_performance_to_csv)
+
+
+
+        #report_menu.add_separator()
+        #
+        #report_menu.add_command(label="PSI for Excel", command=self.psi_for_excel)
+
+        menubar.add_cascade(label="Report", menu=report_menu)
+
+
+
+        # Revenue and Profit menu
+        revenue_profit_menu = tk.Menu(menubar, tearoff=0)
+        revenue_profit_menu.add_command(label="Revenue and Profit", command=self.show_revenue_profit)
+        menubar.add_cascade(label="Revenue and Profit", menu=revenue_profit_menu)
+
+
+        # Cash Flow analysis menu
+        cashflow_menu = tk.Menu(menubar, tearoff=0)
+        cashflow_menu.add_command(label="PSI Price for CF", command=self.psi_price4cf)
+        cashflow_menu.add_command(label="Cash Out&In&Net", command=self.cashflow_out_in_net)
+
+        menubar.add_cascade(label="Cash Flow", menu=cashflow_menu)
+
+
+        # 3D overview menu
+        overview_menu = tk.Menu(menubar, tearoff=0)
+        overview_menu.add_command(label="3D overview on Lots based Plan", command=self.show_3d_overview)
+        menubar.add_cascade(label="3D overview", menu=overview_menu)
+
+        self.root.config(menu=menubar)
+
+
+        ##@250701 ADD STOP
+        ## メニューバーの設定直後にplot_frameを定義
+        #self.plot_frame = ttk.Frame(self.root)
+        #self.plot_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        #@250701
+        # <<< ここに plot_frame の定義を追加 >>>
+        self.plot_frame = ttk.Frame(self.root)
+        self.plot_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+
+        # フレームの作成
+        self.frame = ttk.Frame(self.root)
+        self.frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        # Lot size entry
+        self.lot_size_label = ttk.Label(self.frame, text="Lot Size:")
+        self.lot_size_label.pack(side=tk.TOP)
+        self.lot_size_entry = ttk.Entry(self.frame, width=10)
+        self.lot_size_entry.pack(side=tk.TOP)
+
+        #@250117 UPDATE
+        self.lot_size_entry.insert(0, str(self.config.DEFAULT_LOT_SIZE))  # 初期値を設定
+        #self.lot_size_entry.insert(0, str(self.lot_size))  # 初期値を設定
+
+        # Plan Year Start entry
+        self.plan_year_label = ttk.Label(self.frame, text="Plan Year Start:")
+        self.plan_year_label.pack(side=tk.TOP)
+        self.plan_year_entry = ttk.Entry(self.frame, width=10)
+        self.plan_year_entry.pack(side=tk.TOP)
+
+
+        self.plan_year_entry.insert(0, str(self.config.DEFAULT_START_YEAR))  # 初期値を設定
+        #self.plan_year_entry.insert(0, str(self.plan_year_st))  # 初期値を設定
+
+        # Plan Range entry
+        self.plan_range_label = ttk.Label(self.frame, text="Plan Range:")
+        self.plan_range_label.pack(side=tk.TOP)
+        self.plan_range_entry = ttk.Entry(self.frame, width=10)
+        self.plan_range_entry.pack(side=tk.TOP)
+
+
+        self.plan_range_entry.insert(0, str(self.config.DEFAULT_PLAN_RANGE))  # 初期値を設定
+        #self.plan_range_entry.insert(0, str(self.plan_range))  # 初期値を設定
+
+        # 1行分の空白を追加
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+
+
+        #@250120 RUN
+        # Demand Planning ボタン（グレイアウト）
+        self.Demand_Pl_button = ttk.Button(
+            self.frame,
+            text="Demand Planning",
+            command=lambda: None,  # 無効化
+            state="disabled",  # ボタンを無効化
+            style="Disabled.TButton"  # スタイルを適用
+        )
+        self.Demand_Pl_button.pack(side=tk.TOP)
+
+
+        #@250120 STOP
+        ## Demand Planning buttons
+        #self.Demand_Pl_button = ttk.Button(self.frame, text="Demand Planning", command=self.demand_planning)
+        #self.Demand_Pl_button.pack(side=tk.TOP)
+
+
+
+
+        # Plan Year Start entry
+        self.pre_proc_LT_label = ttk.Label(self.frame, text="pre_proc_LT:")
+        self.pre_proc_LT_label.pack(side=tk.TOP)
+        self.pre_proc_LT_entry = ttk.Entry(self.frame, width=10)
+        self.pre_proc_LT_entry.pack(side=tk.TOP)
+
+
+        self.pre_proc_LT_entry.insert(0, str(self.config.DEFAULT_PRE_PROC_LT))  # 初期値を設定
+        #self.pre_proc_LT_entry.insert(0, str(self.pre_proc_LT))  # 初期値を設定
+
+
+        #@250120 RUN
+        # Demand Leveling ボタン（グレイアウト）
+        self.Demand_Lv_button = ttk.Button(
+            self.frame,
+            text="Demand Leveling",
+            command=lambda: None,  # 無効化
+            state="disabled",  # ボタンを無効化
+            style="Disabled.TButton"  # スタイルを適用
+        )
+        self.Demand_Lv_button.pack(side=tk.TOP)
+
+
+        #@250120 STOP
+        ## Demand Leveling button
+        #self.Demand_Lv_button = ttk.Button(self.frame, text="Demand Leveling", command=self.demand_leveling)
+        #self.Demand_Lv_button.pack(side=tk.TOP)
+
+
+
+
+
+        # add a blank line
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+        # Supply Planning button
+        self.supply_planning_button = ttk.Button(self.frame, text="Supply Planning ", command=self.supply_planning)
+        self.supply_planning_button.pack(side=tk.TOP)
+
+        # add a blank line
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+        # Eval_buffer_stock buttons
+        self.eval_buffer_stock_button = ttk.Button(self.frame, text="Eval Buffer Stock ", command=self.eval_buffer_stock)
+        self.eval_buffer_stock_button.pack(side=tk.TOP)
+
+        # add a blank line
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+        # Optimize Network button
+        self.optimize_button = ttk.Button(self.frame, text="OPT Supply Alloc", command=self.optimize_network)
+        self.optimize_button.pack(side=tk.TOP)
+
+
+
+        # add a blank line
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+        # Optimize Network button
+        self.Inbound_DmBw_button = ttk.Button(self.frame, text="Inbound DmBw P", command=self.Inbound_DmBw)
+        self.Inbound_DmBw_button.pack(side=tk.TOP)
+
+
+
+        # add a blank line
+        self.space_label = ttk.Label(self.frame, text="")
+        self.space_label.pack(side=tk.TOP)
+
+        # Optimize Network button
+        self.Inbound_SpFw_button = ttk.Button(self.frame, text="Inbound SpFw P", command=self.Inbound_SpFw)
+        self.Inbound_SpFw_button.pack(side=tk.TOP)
+
+
+
+
+
+
+
+
+        # Network Graph frame
+        self.network_frame = ttk.Frame(self.plot_frame)
+        self.network_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # expand 追加、fill=BOTH
+
+        #@250701 STOP
+        ## Plot area divided into two frames
+        #self.plot_frame = ttk.Frame(self.root)
+        #self.plot_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        #@250701 STOP
+        # Network Graph frame
+        #self.network_frame = ttk.Frame(self.plot_frame)
+        #self.network_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Network Graph frame
+        self.network_frame = ttk.Frame(self.plot_frame, width=500)  # 横幅指定を追加
+        self.network_frame.pack(side=tk.LEFT, fill=tk.Y)  # fill=tk.Y に変更して固定幅化
+
+
+        # New Frame for Parameters at the top of the network_frame
+        self.param_frame = ttk.Frame(self.network_frame)
+        self.param_frame.pack(side=tk.TOP, fill=tk.X)
+
+
+        # Global Market Potential, Target Share, Total Supply Plan input fields arranged horizontally
+        self.gmp_label = tk.Label(self.param_frame, text="Market Potential:", background='navy', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.gmp_label.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+        self.gmp_entry = tk.Entry(self.param_frame, width=10)
+        self.gmp_entry.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+
+        self.ts_label = tk.Label(self.param_frame, text="TargetShare(%)", background='navy', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.ts_label.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+        self.ts_entry = tk.Entry(self.param_frame, width=5)
+        self.ts_entry.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+
+
+
+        self.ts_entry.insert(0, self.config.DEFAULT_TARGET_SHARE * 100) # 初期値
+        #self.ts_entry.insert(0, self.target_share * 100) # 初期値
+
+        self.tsp_label = tk.Label(self.param_frame, text="Total Supply:", background='navy', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.tsp_label.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+        self.tsp_entry = tk.Entry(self.param_frame, width=10)
+        self.tsp_entry.pack(side=tk.LEFT, fill=tk.X, padx=5, pady=10)
+        self.tsp_entry.config(bg='lightgrey')  # 背景色をlightgreyに設定
+
+
+
+
+        # イベントバインディング
+        self.gmp_entry.bind("<Return>", self.update_total_supply_plan)
+        self.ts_entry.bind("<Return>", self.update_total_supply_plan)
+
+        self.fig_network, self.ax_network = plt.subplots(figsize=(4, 8))  # 横幅を縮小
+        self.canvas_network = FigureCanvasTkAgg(self.fig_network, master=self.network_frame)
+
+        ##@250228 ADD STOP
+        #self.canvas_network.get_tk_widget().config(width=500, height=300)  # 画面サイズを制限
+        #self.canvas_network.get_tk_widget().pack(fill=tk.BOTH, expand=False)  # ウィンドウのリサイズを防ぐ
+
+        #@250228 STOP RUN
+        self.canvas_network.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+
+
+
+        self.fig_network.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+
+        # Evaluation result area
+        self.eval_frame = ttk.Frame(self.plot_frame)
+        self.eval_frame.pack(side=tk.TOP, fill=tk.X, padx=(20, 0))  # 横方向に配置
+
+        # Total Revenue
+        self.total_revenue_label = ttk.Label(self.eval_frame, text="Total Revenue:", background='darkgreen', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.total_revenue_label.pack(side=tk.LEFT, padx=5, pady=10)
+        self.total_revenue_entry = ttk.Entry(self.eval_frame, width=10, state='readonly')
+        self.total_revenue_entry.pack(side=tk.LEFT, padx=5, pady=10)
+
+        # Total Profit
+        self.total_profit_label = ttk.Label(self.eval_frame, text="Total Profit:", background='darkgreen', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.total_profit_label.pack(side=tk.LEFT, padx=5, pady=10)
+        self.total_profit_entry = ttk.Entry(self.eval_frame, width=10, state='readonly')
+        self.total_profit_entry.pack(side=tk.LEFT, padx=5, pady=10)
+
+
+
+
+        # Profit Ratio
+        self.profit_ratio_label = ttk.Label(self.eval_frame, text="Profit Ratio:", background='darkgreen', foreground='white', font=('Helvetica', 10, 'bold'))
+        self.profit_ratio_label.pack(side=tk.LEFT, padx=5, pady=10)
+        self.profit_ratio_entry = ttk.Entry(self.eval_frame, width=10, state='readonly')
+        self.profit_ratio_entry.pack(side=tk.LEFT, padx=5, pady=10)
+
+
+# ******************************************************************
+
+
+        # PSI Graph scroll frame（横に並べて拡張）
+        self.psi_frame = ttk.Frame(self.plot_frame)
+        self.psi_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.canvas_psi = tk.Canvas(self.psi_frame)
+        self.scrollbar = ttk.Scrollbar(self.psi_frame, orient="vertical", command=self.canvas_psi.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas_psi)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas_psi.configure(scrollregion=self.canvas_psi.bbox("all"))
+        )
+
+        self.canvas_psi.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas_psi.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas_psi.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+
+
+

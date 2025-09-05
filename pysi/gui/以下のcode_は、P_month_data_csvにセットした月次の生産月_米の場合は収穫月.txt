@@ -1,0 +1,3 @@
+
+
+以下のcode'''  '''は、P_month_data.csvにセットした月次の生産月(米の場合は収穫月)毎の生産量を週次に展開して、psi4supply[w][3]にセットするとともに、Demand Layer側のpsi4demand[w][0]をSupply Layer側のpsi4supply[w][3]に流し込む(=Demand Allocationする)処理が定義されています。ここで、最初の年の1年分のDemand Allocationが行われているのですが、複数年のDemand Allocationを行うには、どのように修正すれば良いか?分かりますか?

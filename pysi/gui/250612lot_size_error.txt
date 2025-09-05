@@ -1,0 +1,23 @@
+
+
+lot_ID CS_JPN202513997
+lot_ID leaf_node_name CS_JPN202513997 CS_JPN
+lot_ID CS_JPN202513998
+lot_ID leaf_node_name CS_JPN202513998 CS_JPN
+lot_ID CS_JPN202513999
+lot_ID leaf_node_name CS_JPN202513999 CS_JPN
+lot_ID CS_JPN2025131000
+lot_ID leaf_node_name CS_JPN2025131000 CS_JPN2
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "C:\Users\ohsug\anaconda3\Lib\tkinter\__init__.py", line 1967, in __call__
+    return self.func(*args)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\ohsug\PySI_V0R6M2_RICE\pysi\gui\app.py", line 2808, in load_data_files
+    feedback_psi_lists(self.root_node_outbound, self.nodes_outbound)
+  File "C:\Users\ohsug\PySI_V0R6M2_RICE\pysi\gui\app.py", line 1038, in feedback_psi_lists
+    leaf_node = nodes[leaf_node_name]
+                ~~~~~^^^^^^^^^^^^^^^^
+KeyError: 'CS_JPN2'
+
+

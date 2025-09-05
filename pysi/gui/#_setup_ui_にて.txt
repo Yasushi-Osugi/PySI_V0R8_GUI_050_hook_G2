@@ -1,0 +1,12 @@
+
+
+# setup_ui ‚É‚Ä
+self.scrollable_frame.bind("<Configure>", lambda e:
+    self.canvas_psi.configure(scrollregion=self.canvas_psi.bbox("all"))
+)
+
+# show_psi ‚Ì––”ö
+self.scrollable_frame.update_idletasks()
+self.canvas_psi.configure(scrollregion=self.canvas_psi.bbox("all"))
+
+

@@ -1,0 +1,71 @@
+実行パスと import を“安定”させる方法
+1) 最速：カレントをリポジトリ直下にして実行
+cd C:\your-repo
+$env:PYTHONPATH = "$PWD"          # 1回のセッションでOK
+python -m pysi.app.orchestrator --db var\psi.sqlite --scenario Baseline --schema pysi\db\schema.sql --csv data\S_month_data.csv --report
+
+2) 盤石：パッケージとしてインストール（editable）
+
+pyproject.toml を用意して コンソールコマンドを生やします：
+
+[project]
+name = "pysi"
+version = "0.1.0"
+dependencies = ["pandas","matplotlib"]
+
+[project.scripts]
+psi-orchestrate = "pysi.app.orchestrator:main"    # ← これで `psi-orchestrate` コマンドが使える
+
+
+インストール：
+
+cd C:\your-repo
+python -m pip install -e .
+psi-orchestrate --db var\psi.sqlite --scenario Baseline --schema pysi\db\schema.sql --csv data\S_month_data.csv --report
+
+代表コマンド（この配置でそのまま動きます）
+# 1) スキーマ適用（Step2）
+python -c "from pysi.db.apply_schema import apply_schema; apply_schema('var/psi.sqlite','pysi/db/schema.sql')"
+
+# 2) ETL（Step3）
+python -m pysi.etl.etl_monthly_to_lots --db var\psi.sqlite --csv data\S_month_data.csv --scenario Baseline --default-lot-size 50
+
+# 3) I/O + 書戻し（orchestrator / leafモード）
+python -m pysi.app.orchestrator --db var\psi.sqlite --scenario Baseline --mode leaf --report
+
+# 4) treeモード（既存factoryでroot生成）
+python -m pysi.app.orchestrator --db var\psi.sqlite --scenario Baseline `
+  --mode tree --network pysi.network.factory:factory `
+  --write-all-nodes --report
+
+# 5) 整合テスト（Step5 CLI版）
+python scripts\psi_consistency_tests.py --db var\psi.sqlite --scenario Baseline --product RICE --node TOKYO --leaf
+
+こう切ると“気持ちよく”回ります
+
+コードは pysi/、データは data/、生成物は var/。これだけで混乱が激減。
+
+DDLとETLは pysi/db/ と pysi/etl/ に固定して、他の層からは import だけ。
+
+GUIは pysi を利用者にして、pysi.network の PlanNode/factory を介して結合。
+
+orchestrator.py は CLIの顔。将来は --config config.yaml で一発実行も簡単。
+
+よくある落とし穴と回避策
+
+相対パス地獄
+→ DBやスキーマは リポジトリ基準の相対に統一（例：var/psi.sqlite, pysi/db/schema.sql）。CLI引数に渡す。
+
+import失敗（ModuleNotFoundError）
+→ PYTHONPATH をルートに通す or pip install -e .。実行は常にリポジトリ直下で。
+
+GUIとエンジンの循環依存
+→ GUIは pysi を使う側。pysi は GUI を知らない（逆方向のimport禁止）。
+
+まとめ
+
+pysi/ パッケージ配下に Step1〜7 を整理、orchestrator は pysi/app/ でCLI化。
+
+DB/スキーマ/ETL/報告の正本をそれぞれ所定の場所に固定し、生成物は var/ へ。
+
+今日からこの構成にすると、GUI・DB・エンジンの増改築が圧倒的に楽になります。✔️
