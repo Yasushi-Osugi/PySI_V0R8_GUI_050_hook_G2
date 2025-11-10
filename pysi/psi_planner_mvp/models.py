@@ -5,9 +5,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
-
 Base = declarative_base()
-
 class Scenario(Base):
     __tablename__ = "scenarios"
     id = Column(Integer, primary_key=True)
@@ -16,7 +14,6 @@ class Scenario(Base):
     tags = Column(String, default="")          # "rice,baseline,JP"
     base_date = Column(String, default="2025W32")
     parameters = relationship("Parameter", back_populates="scenario", cascade="all, delete-orphan")
-
 class Parameter(Base):
     __tablename__ = "parameters"
     id = Column(Integer, primary_key=True)
@@ -30,7 +27,6 @@ class Parameter(Base):
     help = Column(Text, default="")
     scenario = relationship("Scenario", back_populates="parameters")
     __table_args__ = (UniqueConstraint('scenario_id','key', name='uq_scenario_key'),)
-
 class CostItem(Base):
     __tablename__ = "cost_items"
     id = Column(Integer, primary_key=True)
@@ -41,7 +37,6 @@ class CostItem(Base):
     amount = Column(Float)                     # JPY
     unit = Column(String, default="JPY")
     note = Column(Text, default="")
-
 class Elasticity(Base):
     __tablename__ = "elasticities"
     id = Column(Integer, primary_key=True)
@@ -50,7 +45,6 @@ class Elasticity(Base):
     region = Column(String)
     elastic_price = Column(Float)              # 価格弾力性（マイナスが通常）
     elastic_promo = Column(Float)              # 施策弾力性
-
 class Run(Base):
     __tablename__ = "runs"
     id = Column(Integer, primary_key=True)
@@ -60,7 +54,6 @@ class Run(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="queued") # queued|done|failed
     summary = Column(JSON, default={})         # KPIサマリ（在庫回転/粗利 等）
-
 engine = create_engine("sqlite:///psi.db")
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)

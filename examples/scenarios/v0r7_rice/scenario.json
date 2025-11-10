@@ -1,0 +1,72 @@
+{
+  "id": "RICE_V0R7_SCENARIO",
+  "timebase": { "weeks": 8, "iso_year_start": 2025, "iso_week_start": 1 },
+
+  "plugins": {
+    "enable": [
+      "pysi.plugins.urgency_tickets",
+      "pysi.plugins.capacity_clip",
+      "pysi.plugins.diagnostics",
+      "pysi.plugins.log_moves_csv",
+      "pysi.plugins.educ_pack"
+    ],
+    "config": {
+      "pysi.plugins.capacity_clip": {
+        "clip_mode": "hard",
+        "per_edge_capacity_override": {
+          "('WS1JPN','RT_JPN','JPN_RICE_1')": 5,
+          "('WS2JPN','RT_JPN','JPN_RICE_1')": 3
+        }
+      },
+      "pysi.plugins.urgency_tickets": {
+        "base_urgency": 1.0,
+        "urgency_by_node": {
+          "CS_JPN": 1.3,
+          "CS_CAL": 1.2,
+          "GR_CS_JPN": 0.8
+        }
+      },
+      "pysi.plugins.log_moves_csv": {
+        "enabled": true,
+        "out_dir": "_ops"
+      },
+      "pysi.plugins.educ_pack": {
+        "export_series_csv": true,
+        "export_kpi_csv": true,
+        "export_psi_df": true
+      }
+    }
+  },
+
+  "objective": {
+    "weights": {
+      "fill_rate": 1.0,
+      "inventory": 0.25,
+      "throughput": 0.2
+    }
+  },
+
+  "allocation": {
+    "policy": "tickets",
+    "ticket_fields": ["urgency"]
+  },
+
+  "experiments": [
+    {
+      "name": "mild_spike",
+      "demand_multiplier": 1.2,
+      "weeks": [2, 3]
+    },
+    {
+      "name": "hard_spike",
+      "demand_multiplier": 1.8,
+      "weeks": [2]
+    }
+  ],
+
+  "meta": {
+    "csv_layout": "v0r7",
+    "preferred_root": "outbound",
+    "notes": "V0R7 rice demo with capacity clip and urgency-based tickets."
+  }
+}

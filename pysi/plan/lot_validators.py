@@ -1,34 +1,26 @@
 
-
 # pysi/plan/lot_validators.py
 from __future__ import annotations
 from typing import Iterable, Dict, List, Tuple, Set, Optional
-
 BUCKET_IDX = {"S":0, "CO":1, "I":2, "P":3}
-
 def _iter_nodes(root):
     stack=[root]
     while stack:
         n=stack.pop()
         yield n
         stack.extend(getattr(n,"children",[]) or [])
-
 def _psi_layer(node, layer:str):
     return node.psi4demand if layer=="demand" else node.psi4supply
-
 def _weekly_sets(psi:List[List[list]], bucket:str)->List[Set[str]]:
     """週ごとに set 化（重複確認に便利）"""
     b = BUCKET_IDX[bucket]
     W = len(psi)
     return [set(psi[w][b]) for w in range(W)]
-
 def _weekly_lists(psi:List[List[list]], bucket:str)->List[List[str]]:
     b = BUCKET_IDX[bucket]
     return [psi[w][b] for w in range(len(psi))]
-
 def _count_bucket(psi, bucket:str)->int:
     return sum(len(psi[w][BUCKET_IDX[bucket]]) for w in range(len(psi)))
-
 # ============= 1) 親S = Σ(子PをLTオフセット) を検証 ===================
 def validate_parent_S_equals_children_P(root, *,
     layer:str="demand",
@@ -45,16 +37,13 @@ def validate_parent_S_equals_children_P(root, *,
     sign = -1 if parent_before_child else +1
     all_ok = True
     per_node = []
-
     for parent in _iter_nodes(root):
         chs = getattr(parent,"children",[]) or []
-        if not chs: 
+        if not chs:
             continue  # 葉は親にならない
-
         psi_p = _psi_layer(parent, layer)
         W = len(psi_p)
         actual_S = _weekly_sets(psi_p, "S")
-
         # 期待Sを子Pから合成
         expected_S = [set() for _ in range(W)]
         for ch in chs:
@@ -71,7 +60,6 @@ def validate_parent_S_equals_children_P(root, *,
                 wp = wc + sign*LT
                 if 0<=wp<W:
                     expected_S[wp].update(psi_c[wc][BUCKET_IDX["P"]])
-
         # 週ごと一致判定
         mismatches = []
         for w in range(W):
@@ -90,4 +78,3 @@ def validate_parent_S_equals_children_P(root, *,
                 "count": len(mismatches),
                 "samples": mismatches[:5],
             })
-

@@ -1,20 +1,16 @@
 #calendar445.py
-
 import datetime
-
 class Calendar445:
     def __init__(self, start_year: int, plan_range: int):
         self.start_year = start_year
         self.plan_range = plan_range
         self.use_53week_years = self.get_53week_years()
-
     def get_53week_years(self):
         result = []
         for year in range(self.start_year, self.start_year + self.plan_range):
             if datetime.date(year, 12, 31).weekday() == 4:  # 金曜日 = 4
                 result.append(year)
         return result
-
     def get_week_labels(self):
         week_labels = {}
         week = 1
@@ -28,7 +24,6 @@ class Calendar445:
                 week_labels[week] = label
                 week += w
         return week_labels
-
     def get_month_end_weeks(self):
         week = 1
         ends = []
@@ -41,4 +36,3 @@ class Calendar445:
                 ends.append(week + w - 1)
                 week += w
         return ends
-

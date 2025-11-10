@@ -1,11 +1,8 @@
 # pysi/io/tree_writeback.py
-
 from __future__ import annotations
 import sqlite3
 from typing import Dict, List
 from typing import Set, Tuple, Iterable
-
-
 # 既存 I/O ユーティリティを利用
 from pysi.io.psi_io_adapters import (
     load_leaf_S_and_compute,
@@ -14,15 +11,10 @@ from pysi.io.psi_io_adapters import (
     get_node_id,
     get_product_id,
 )
-
 # ******************************************
 # 本物の PlanNode を使う
 # ******************************************
 from pysi.network.node_base import PlanNode
-
-
-
-
 class _NodeShim:
     """
     PlanNode を持たない環境でも I/O を流せる極小の代替。
@@ -34,13 +26,11 @@ class _NodeShim:
     - psi4demand/psi4supply: 週ごとに [S,CO,I,P] の4配列
     """
     __slots__ = ("name", "_weeks", "psi4demand", "psi4supply")
-
     def __init__(self, name: str):
         self.name = name
         self._weeks = 0
         self.psi4demand: List[List[List[str]]] = []
         self.psi4supply: List[List[List[str]]] = []
-
     def set_plan_range_by_weeks(self, weeks_count: int, plan_year_st: int, preserve: bool = False):
         self._weeks = int(weeks_count)
         base = [[[], [], [], []] for _ in range(self._weeks)]
@@ -49,13 +39,11 @@ class _NodeShim:
             pass
         self.psi4demand = [ [list(b[0]), list(b[1]), list(b[2]), list(b[3])] for b in base ]
         self.psi4supply = [ [list(b[0]), list(b[1]), list(b[2]), list(b[3])] for b in base ]
-
     # 古いAPIで呼ばれる可能性に備えたダミー（未使用でも安全）
     def set_plan_range_lot_counts(self, lot_years: int, plan_year_st: int):
         # 53週×年 で近似（ここは呼ばれない想定。保険で用意）
         weeks = max(1, int(lot_years)) * 53
         self.set_plan_range_by_weeks(weeks, plan_year_st, preserve=False)
-
     def set_S2psi(self, pSi: List[List[str]]):
         """pSi は週ごとの S ロット配列。psi4demand を [S,CO,I,P] 形に組み直す。"""
         if self._weeks == 0:
@@ -71,17 +59,13 @@ class _NodeShim:
             self.psi4demand[i][1] = []           # CO
             self.psi4demand[i][2] = []           # I
             self.psi4demand[i][3] = []           # P
-
     def calcS2P(self):         # エンジンが無くても互換のため用意（NO-OP）
         return
     def calcS2P_4supply(self): # 呼ばれる場合があるので用意（NO-OP）
         return
-
     def copy_demand_to_supply(self):
         # 深いコピー（lot_id 文字列なので浅くても実害は小さいが、形は分ける）
         self.psi4supply = [ [list(b[0]), list(b[1]), list(b[2]), list(b[3])] for b in self.psi4demand ]
-
-
 def _build_psibuckets_from_lot(conn: sqlite3.Connection, scenario_id: int,
                                node_name: str, product_name: str) -> _NodeShim:
     """
@@ -91,7 +75,6 @@ def _build_psibuckets_from_lot(conn: sqlite3.Connection, scenario_id: int,
     weeks = len(week_seq)
     node_id = get_node_id(conn, node_name)
     product_id = get_product_id(conn, product_name)
-
     rows = conn.execute(
         """SELECT iso_year, iso_week, lot_id
              FROM lot
@@ -99,7 +82,6 @@ def _build_psibuckets_from_lot(conn: sqlite3.Connection, scenario_id: int,
             ORDER BY iso_year, iso_week, lot_id""",
         (scenario_id, node_id, product_id)
     ).fetchall()
-
     pSi = [[] for _ in range(weeks)]
     missed = 0
     for y, w, lot_id in rows:
@@ -108,17 +90,13 @@ def _build_psibuckets_from_lot(conn: sqlite3.Connection, scenario_id: int,
             missed += 1
             continue
         pSi[idx].append(lot_id)
-
     if missed:
         print(f"[WARN] lot→PSI: {node_name}/{product_name} シナリオ外 {missed} 件をスキップ")
-
     shim = _NodeShim(node_name)
     shim.set_plan_range_by_weeks(weeks, plan_year_st=0, preserve=False)
     shim.set_S2psi(pSi)
     shim.copy_demand_to_supply()
     return shim
-
-
 def write_both_layers_for_pair(conn: sqlite3.Connection,
                                scenario_id: int,
                                node_name: str,
@@ -151,7 +129,6 @@ def write_both_layers_for_pair(conn: sqlite3.Connection,
     except Exception as e:
         # 落ちても後段のフォールバックに任せる
         pass
-
     # フォールバック：lot 直読みで S バケツを構成して書戻し
     fb = _build_psibuckets_from_lot(conn, scenario_id, node_name, product_name)
     d_rows, s_rows = write_both_layers(
@@ -163,9 +140,7 @@ def write_both_layers_for_pair(conn: sqlite3.Connection,
     )
     weeks = len(fb.psi4demand) if fb.psi4demand else 0
     return {"d_rows": int(d_rows), "s_rows": int(s_rows), "weeks": weeks}
-
 # --- helpers used by orchestrator (tree mode) --------------------
-
 def pairs_from_weekly_demand(conn: sqlite3.Connection, scenario_id: int) -> Set[Tuple[str, str]]:
     """
     DBの weekly_demand から (node_name, product_name) のユニークペアを返す。
@@ -182,7 +157,6 @@ def pairs_from_weekly_demand(conn: sqlite3.Connection, scenario_id: int) -> Set[
         """, (scenario_id,)
     ).fetchall()
     return {(r[0], r[1]) for r in rows}
-
 def node_names_from_plan_root(root) -> Set[str]:
     """
     PlanNode ルートから .children をたどってノード名集合を返す。
@@ -215,15 +189,12 @@ def node_names_from_plan_root(root) -> Set[str]:
                 children = []
         stack.extend(children)
     return names
-
 def intersect_pairs_with_network(pairs: Iterable[Tuple[str, str]], node_names: Set[str]) -> Set[Tuple[str, str]]:
     """
     ネットワークに含まれるノード名だけに (node, product) ペアを絞り込む。
     """
     node_names = set(node_names or ())
     return {(n, p) for (n, p) in pairs if n in node_names}
-
-
 # ******************************************
 # 本物の PlanNode を使う
 # ******************************************
@@ -239,7 +210,6 @@ def _read_node_attrs(conn: sqlite3.Connection, node_name: str, product_name: str
       JOIN product p ON np.product_id = p.id
       WHERE n.name=? AND p.name=?
     """, (node_name, product_name)).fetchone()
-
     if not row:
         return {}
     lot_size, leadtime, ss_days, lvw = row
@@ -253,8 +223,6 @@ def _read_node_attrs(conn: sqlite3.Connection, node_name: str, product_name: str
         except Exception:
             pass
     return out
-
-
 def _build_plan_node(node_name: str, attrs: Dict) -> PlanNode:
     """PlanNode を生成して、取得できた属性だけ安全にセット。"""
     n = PlanNode(node_name)
@@ -262,8 +230,6 @@ def _build_plan_node(node_name: str, attrs: Dict) -> PlanNode:
         if hasattr(n, k):
             setattr(n, k, v)
     return n
-
-
 def write_both_layers_for_pair(conn: sqlite3.Connection,
                                scenario_id: int,
                                node_name: str,
@@ -276,7 +242,6 @@ def write_both_layers_for_pair(conn: sqlite3.Connection,
     # 属性を取得して PlanNode 構築
     attrs = _read_node_attrs(conn, node_name, product_name)
     node  = _build_plan_node(node_name, attrs)
-
     # Sを注入し、S→P 計算 & demand→supply 同期
     load_leaf_S_and_compute(
         conn,
@@ -285,7 +250,6 @@ def write_both_layers_for_pair(conn: sqlite3.Connection,
         product_name=product_name,
         layer="demand",
     )
-
     # demand/supply 両方を書き戻し
     d_rows, s_rows = write_both_layers(
         conn,
@@ -294,7 +258,6 @@ def write_both_layers_for_pair(conn: sqlite3.Connection,
         product_name=product_name,
         replace_slice=True,
     )
-
     # 週数は calendar（すでに DB 側が正）に依存：手軽に数える
     weeks = conn.execute("SELECT COUNT(*) FROM calendar_iso").fetchone()[0] or 0
     return {"d_rows": int(d_rows), "s_rows": int(s_rows), "weeks": int(weeks)}

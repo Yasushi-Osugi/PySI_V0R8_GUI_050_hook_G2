@@ -1,5 +1,4 @@
 #sql_geo_check.py
-
 import sqlite3
 DB=r"C:\Users\ohsug\PySI_V0R8_SQL_010\data\pysi.sqlite3"
 with sqlite3.connect(DB) as con:

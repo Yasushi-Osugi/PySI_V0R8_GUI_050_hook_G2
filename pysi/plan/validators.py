@@ -1,6 +1,4 @@
 #psi.plan.validators.py
-
-
 # =========================
 # 6) 追加: バリデーション
 # =========================
@@ -8,31 +6,21 @@
 from __future__ import annotations
 import re
 from typing import Dict, Iterable, List, Optional, Pattern, Tuple, Union
-
-
-
 # =========================================================
 # Lot ID 仕様
 #  - 旧:  NODE + YYYYWWNNNN
 #  - 新:  NODE-PRODUCT-YYYYWWNNNN  （区切りは LOT_SEP = "-"）
 # どちらも「末尾10桁が数値(YYYYWWNNNN)」という共通性を利用する。
 # =========================================================
-
-
 LOT_SEP = "-"  # 新フォーマットの区切り: NODE-PRODUCT-YYYYWWNNNN
-
 # 末尾10桁（YYYYWWNNNN）に名前付きグループを持つパターン
 # → 新旧どちらの接頭部でもマッチしつつ、year/week/seq を取り出せる
 DEFAULT_LOT_ID_PATTERN = r".*(?P<year>\d{4})(?P<week>\d{2})(?P<seq>\d{4})$"
 DEFAULT_LOT_ID_RE: Pattern[str] = re.compile(DEFAULT_LOT_ID_PATTERN)
-
 # 新フォーマットを厳密チェックしたい場合
 STRICT_LOT_ID_RE: Pattern[str] = re.compile(r"^[^-]+-[^-]+-\d{10}$")
-
 # 旧実装が使っていた「末尾10桁からグループ抽出」の別名（残しておくと楽）
 LEGACY_TAIL_GROUPS_RE: Pattern[str] = DEFAULT_LOT_ID_RE
-
-
 # =========================================================
 # GUI/ユーティリティの置き換え（旧 extract_node_name）
 #旧来の「末尾9/10文字をバッサリ切る」関数は卒業し、パーサ経由で取得する
@@ -48,23 +36,15 @@ LEGACY_TAIL_GROUPS_RE: Pattern[str] = DEFAULT_LOT_ID_RE
 #product = extract_product_name(lot_id) or ""   # 旧フォーマットだと None になるのでフォールバック
 #検索置換の目安
 #[:-9], [:-10], extract_node_name( などで grep して、対象箇所を洗い出すと置き換え漏れを防げます。
-
 #型ヒントの注意（Python バージョン）
 #str | None は Python 3.10+。それ以前なら Optional[str] を使うか、from __future__ import annotations をファイル先頭に入れてください。
 #「いますぐ全箇所を改修する必要はないけど、該当箇所を見つけたら新関数に寄せていく」がベストです。
-
 def extract_node_name(lot_id: str) -> str:
     node, _, _, _, _ = parse_lot_id(lot_id)
     return node
-
 def extract_product_name(lot_id: str) -> Optional[str]:
     _, product, _, _, _ = parse_lot_id(lot_id)
     return product
-
-
-
-
-
 # =========================================================
 # ツリー走査ユーティリティ
 # =========================================================
@@ -75,13 +55,10 @@ def _iter_tree_nodes(root) -> Iterable[object]:
         n = stack.pop()
         yield n
         stack.extend(getattr(n, "children", []) or [])
-
 def _iter_all_nodes(prod_tree_dict: Dict[str, object]) -> Iterable[object]:
     """{product_name: root} から全ノードを列挙"""
     for root in prod_tree_dict.values():
         yield from _iter_tree_nodes(root)
-
-
 # =========================================================
 # Lot ID パーサ
 # =========================================================
@@ -89,7 +66,6 @@ def parse_lot_id(lot_id: str, sep: str = LOT_SEP) -> Tuple[str, Optional[str], i
     """
     新正式版パーサ（推奨）:
       戻り値 = (node, product_or_None, year, iso_week, seq)
-
     - 新フォーマット: NODE-PRODUCT-YYYYWWNNNN  → product を返す
     - 旧フォーマット: NODEYYYYWWNNNN          → product は None
     """
@@ -99,7 +75,6 @@ def parse_lot_id(lot_id: str, sep: str = LOT_SEP) -> Tuple[str, Optional[str], i
     year = int(tail[:4])
     week = int(tail[4:6])
     seq  = int(tail[6:])
-
     head = lot_id[:-10]
     if sep in head:
         parts = head.split(sep)
@@ -107,10 +82,7 @@ def parse_lot_id(lot_id: str, sep: str = LOT_SEP) -> Tuple[str, Optional[str], i
         product = parts[1] if len(parts) >= 2 else None
     else:
         node, product = head, None
-
     return node, product, year, week, seq
-
-
 def parse_lot_id_legacy(
     lot_id: str,
     pattern: Optional[Union[str, Pattern[str]]] = None,
@@ -118,26 +90,21 @@ def parse_lot_id_legacy(
     """
     旧API互換: dict を返す版。
       戻り値 = {"prefix": <node[-product]部>, "year": int, "week": int, "seq": int}
-
     - pattern を渡さない場合は「末尾10桁が数字」を DEFAULT_LOT_ID_RE で判定。
     - 年/週/連番は LEGACY_TAIL_GROUPS_RE で抽出。
     """
     regex = DEFAULT_LOT_ID_RE if pattern is None else (re.compile(pattern) if isinstance(pattern, str) else pattern)
     if not regex.match(lot_id):
         return None
-
     m = LEGACY_TAIL_GROUPS_RE.search(lot_id)
     if not m:
         return None
-
     return {
         "prefix": lot_id[:-10],  # NODE[-PRODUCT] 部分（旧来の prefix と互換）
         "year": int(m.group("year")),
         "week": int(m.group("week")),
         "seq":  int(m.group("seq")),
     }
-
-
 # =========================================================
 # Lot ID の形式チェック（単一ルート向け・プリント出力）
 # =========================================================
@@ -149,7 +116,6 @@ def validate_lot_format_all(root, use_strict: bool = False, limit_print: int = 3
     """
     pat = STRICT_LOT_ID_RE if use_strict else DEFAULT_LOT_ID_RE
     bad: List[Tuple[str, int, int, str]] = []
-
     def _walk(n):
         # psi4demand = [[S, CO, I, P], [S, CO, I, P], ...] を想定
         for w, buckets in enumerate(getattr(n, "psi4demand", []), start=1):
@@ -159,17 +125,13 @@ def validate_lot_format_all(root, use_strict: bool = False, limit_print: int = 3
                         bad.append((n.name, w, b_idx, lot))
         for c in getattr(n, "children", []):
             _walk(c)
-
     _walk(root)
-
     if bad:
         print(f"[WARN] lot_id format NG count={len(bad)} (show first {limit_print})")
         for i, (node, wk, bi, lot) in enumerate(bad[:limit_print], start=1):
             print(f"  {i:>3}  {node} w{wk} b{bi}: {lot}")
     else:
         print("[OK] lot_id format verified.")
-
-
 # =========================================================
 # Lot ID の形式/重複チェック（辞書全体を走査・結果を返す）
 # =========================================================
@@ -188,7 +150,6 @@ def check_lot_id_format(
     regex = DEFAULT_LOT_ID_RE if pattern is None else (re.compile(pattern) if isinstance(pattern, str) else pattern)
     bad: List[Tuple[str, str]] = []
     total = 0
-
     for n in _iter_all_nodes(prod_tree_dict):
         psi = getattr(n, source, None)
         if not isinstance(psi, list):
@@ -202,8 +163,6 @@ def check_lot_id_format(
                     if limit and len(bad) >= limit:
                         return total, len(bad), bad
     return total, len(bad), bad
-
-
 def assert_unique_lot_ids(
     prod_tree_dict: Dict[str, object],
     source: str = "psi4demand",
@@ -216,7 +175,6 @@ def assert_unique_lot_ids(
     """
     seen, dup = set(), []
     total = 0
-
     for n in _iter_all_nodes(prod_tree_dict):
         psi = getattr(n, source, None)
         if not isinstance(psi, list):
@@ -231,16 +189,11 @@ def assert_unique_lot_ids(
                         return total, len(dup), dup
                 else:
                     seen.add(lot)
-
     return total, len(dup), dup
-
-
 # --- 伝播後用：ノード内ユニークネス検査  -------------------------------
-
 ## （任意）ノード内重複の検査に切替
 #total, dup_cnt, _ = assert_no_intra_node_duplicates(root)
 #print(f"[{prod}] intra-node uniqueness: total={total}, dup={dup_cnt}")
-
 def assert_no_intra_node_duplicates(root) -> tuple[int, int, list]:
     """
     ツリーを走査し、同一 node/bucket の中で重複した lot_id を検出。
@@ -253,11 +206,9 @@ def assert_no_intra_node_duplicates(root) -> tuple[int, int, list]:
             yield x
             for c in getattr(x, "children", []) or []:
                 st.append(c)
-
     dups = []
     total = 0
     LABELS = ("S","CO","I","P")
-
     for nd in traverse(root):
         psi = getattr(nd, "psi4demand", None)
         if not isinstance(psi, list):
@@ -273,7 +224,6 @@ def assert_no_intra_node_duplicates(root) -> tuple[int, int, list]:
                         dups.append((nd.name, label, w, lot))
                     else:
                         seen.add(lot)
-
     if dups:
         print(f"[WARN] intra-node dup lot_ids: {len(dups)} (show 20)")
         for rec in dups[:20]:
@@ -281,8 +231,6 @@ def assert_no_intra_node_duplicates(root) -> tuple[int, int, list]:
     else:
         print("[OK] no intra-node duplicate lot_ids.")
     return total, len(dups), dups[:20]
-
-
 def show_cross_node_sharing(root, limit=10):
     def traverse(n):
         st=[n]
@@ -291,11 +239,9 @@ def show_cross_node_sharing(root, limit=10):
             yield x
             for c in getattr(x, "children", []) or []:
                 st.append(c)
-
     first_seen = {}  # lot_id -> (node, bucket, week)
     cross = []
     LABELS=("S","CO","I","P")
-
     for nd in traverse(root):
         psi = nd.psi4demand
         for w in range(len(psi)):
@@ -311,11 +257,6 @@ def show_cross_node_sharing(root, limit=10):
                     else:
                         first_seen[key] = loc
     print("[sample] cross-node sharing: <none within limit>")
-
-
-
-
-
 # =========================================================
 # デバッグ出力（週次DFのダンプ）
 # =========================================================
@@ -328,8 +269,3 @@ def dump_weekly_lots_csv(df_weekly, out_path: str) -> bool:
         return False
     except Exception:
         return False
-    
-
-
-
-

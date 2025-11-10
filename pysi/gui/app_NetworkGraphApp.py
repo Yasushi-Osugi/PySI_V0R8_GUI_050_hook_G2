@@ -1,13 +1,10 @@
 #NetworkGraphApp.py
-
-
 import tkinter as tk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import networkx as nx
 import numpy as np
 import gc
-
 class NetworkGraphApp:
     def __init__(self, root):
         self.root = root
@@ -27,36 +24,29 @@ class NetworkGraphApp:
         self.pos_E2E = {}         # 仮の初期化
         self.total_revenue = 0    # 仮の初期化
         self.total_profit = 0     # 仮の初期化
-
         # キャンバスと軸の初期化
         self.fig_network, self.ax_network = plt.subplots()
         self.canvas_network = FigureCanvasTkAgg(self.fig_network, master=self.root)
         self.canvas_network.get_tk_widget().pack()
-
         # クリックイベントを一度だけ登録
         self.canvas_network.mpl_connect('button_press_event', self.on_plot_click)
-
     def draw_network4opt(self, G, Gdm, Gsp, pos_E2E, flowDict_opt):
         self.ax_network.clear()  # 図をクリア
-
         # タイトル設定
         total_revenue = round(self.total_revenue)
         total_profit = round(self.total_profit)
         profit_ratio = round((total_profit / total_revenue) * 100, 1) if total_revenue != 0 else 0
         self.ax_network.set_title(
-            f'PySI Optimized Supply Chain Network\nREVENUE: {total_revenue:,} | PROFIT: {total_profit:,} | PROFIT_RATIO: {profit_ratio}%', 
+            f'PySI Optimized Supply Chain Network\nREVENUE: {total_revenue:,} | PROFIT: {total_profit:,} | PROFIT_RATIO: {profit_ratio}%',
             fontsize=10
         )
         self.ax_network.axis('off')
-
         # ノードの形状と色
         node_shapes = ['v' if node in self.decouple_node_selected else 'o' for node in G.nodes()]
         node_colors = ['brown' if node in self.decouple_node_selected else 'lightblue' for node in G.nodes()]
-
         # ノード描画
         for node, shape, color in zip(G.nodes(), node_shapes, node_colors):
             nx.draw_networkx_nodes(G, pos_E2E, nodelist=[node], node_size=50, node_color=color, node_shape=shape, ax=self.ax_network)
-
         # エッジ描画
         for edge in G.edges():
             if edge[0] == "procurement_office" or edge[1] == "sales_office":
@@ -68,25 +58,20 @@ class NetworkGraphApp:
             else:
                 edge_color = 'lightgrey'
             nx.draw_networkx_edges(G, pos_E2E, edgelist=[edge], edge_color=edge_color, arrows=False, ax=self.ax_network, width=0.5)
-
         # 最適化パス（赤線）
         for from_node, flows in flowDict_opt.items():
             for to_node, flow in flows.items():
                 if flow > 0:
                     nx.draw_networkx_edges(self.G, pos_E2E, edgelist=[(from_node, to_node)], ax=self.ax_network, edge_color='red', arrows=False, width=0.5)
-
         # ノードラベル
         node_labels = {node: f"{node}" for node in G.nodes()}
         nx.draw_networkx_labels(G, pos_E2E, labels=node_labels, font_size=10, ax=self.ax_network)
-
         # キャンバス更新
         self.canvas_network.draw()
         plt.close(self.fig_network)  # メモリ解放のため閉じる
-
     def on_plot_click(self, event):
         if event.xdata is None or event.ydata is None:
             return
-
         # 最も近いノードを検索
         min_dist = float('inf')
         closest_node = None
@@ -95,7 +80,6 @@ class NetworkGraphApp:
             if dist < min_dist:
                 min_dist = dist
                 closest_node = node
-
         if closest_node and min_dist < 0.5:
             # ノード情報の取得
             select_node = None
@@ -106,7 +90,6 @@ class NetworkGraphApp:
             else:
                 print("Error: Node not found or value is None")
                 return
-
             # ノード情報文字列の作成
             revenue = round(select_node.eval_cs_price_sales_shipped)
             profit = round(select_node.eval_cs_profit)
@@ -138,10 +121,8 @@ class NetworkGraphApp:
                 f" WH_cost     : {round(select_node.eval_cs_warehouse_cost):,}\n"
                 f" Direct_MTRL : {round(select_node.eval_cs_direct_materials_costs):,}\n"
             )
-
             # 情報ウィンドウを表示
             self.show_info_graph(node_info, select_node)
-
     def show_info_graph(self, node_info, select_node):
         # 既存のウィンドウを再利用または作成
         if self.info_window is None or not tk.Toplevel.winfo_exists(self.info_window):
@@ -155,7 +136,6 @@ class NetworkGraphApp:
             # 既存のキャンバスをクリア
             for widget in self.info_frame.grid_slaves(row=0, column=0):
                 widget.destroy()
-
         # 円グラフデータ
         labels = ['Profit', 'SG&A', 'Tax Portion', 'Logistics', 'Warehouse', 'Materials']
         values = [
@@ -171,18 +151,15 @@ class NetworkGraphApp:
         if not filtered:
             filtered = [('No Data', 1, 'gray')]
         labels, values, colors = zip(*filtered)
-
         # 新しい円グラフ
         fig, ax = plt.subplots(figsize=(4, 3))
         ax.pie(values, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)
         ax.set_title(select_node.name, fontsize=9)
-
         # キャンバスを更新
         self.info_canvas = FigureCanvasTkAgg(fig, master=self.info_frame)
         self.info_canvas.get_tk_widget().grid(row=0, column=0)
         self.info_canvas.draw()
         self.info_label.config(text=node_info)
-
         # 古いFigureを閉じる
         plt.close(fig)
         gc.collect()  # ガベージコレクションを明示的に実行

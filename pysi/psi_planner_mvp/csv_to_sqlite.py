@@ -1,17 +1,14 @@
 # csv_to_sqlite.py
 import pandas as pd
 from models import Session, Scenario, Parameter
-
 # 想定CSV: parameters.csv (key,value,dtype,unit,min,max,help)
 # シナリオ名を引数化してもOK
 SCENARIO = "rice_baseline"
-
 with Session() as db:
     sc = db.query(Scenario).filter_by(name=SCENARIO).first()
     if not sc:
         sc = Scenario(name=SCENARIO, description="imported from CSV")
         db.add(sc); db.commit()
-
     df = pd.read_csv("parameters.csv")
     for _,row in df.iterrows():
         p = db.query(Parameter).filter_by(scenario_id=sc.id, key=row['key']).first()

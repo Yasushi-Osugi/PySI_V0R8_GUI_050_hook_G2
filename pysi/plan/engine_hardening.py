@@ -2,7 +2,6 @@
 #2) 親S集約の冪等（replace方式を常用） MEMO attached at end of this code
 #
 # psi/plan/engine_hardening.py
-
 # -*- coding: utf-8 -*-
 """
 Engine hardening: idempotent PSI rebuild helpers
@@ -11,12 +10,9 @@ Engine hardening: idempotent PSI rebuild helpers
  - 事前クリア（CO/I/P）
  - 休暇週(長期休暇)の前倒し・詰めロジック
 """
-
 from __future__ import annotations
 from typing import List, Iterable
-
 BUCKET = {"S":0, "CO":1, "I":2, "P":3}
-
 # ---------- LV helpers ----------
 def _is_vacation_week(vac_weeks: Iterable[int], w: int) -> bool:
     if not vac_weeks: return False
@@ -25,7 +21,6 @@ def _is_vacation_week(vac_weeks: Iterable[int], w: int) -> bool:
     except Exception:
         s = set()
     return int(w) in s
-
 def _prev_open_week(vac_weeks: Iterable[int], w: int) -> int:
     """後退方向（S->P 用）"""
     wp = int(w)
@@ -34,7 +29,6 @@ def _prev_open_week(vac_weeks: Iterable[int], w: int) -> int:
     while wp in s and wp >= 0:
         wp -= 1
     return max(wp, 0)
-
 # ---------- core: idempotent S->P ----------
 def rebuild_P_from_S_idempotent(psi: List[List[List[str]]],
                                 shift_week: int,
@@ -48,7 +42,6 @@ def rebuild_P_from_S_idempotent(psi: List[List[List[str]]],
     # P/CO/I は触らない、まずPだけ空に
     for w in range(W):
         psi[w][BUCKET["P"]] = []
-
     # 後ろから前へ（backward shift）
     for w in range(W-1, -1, -1):
         S = psi[w][BUCKET["S"]]
@@ -60,12 +53,10 @@ def rebuild_P_from_S_idempotent(psi: List[List[List[str]]],
             continue
         eta_shift = _prev_open_week(vac_weeks, eta_plan)
         psi[eta_shift][BUCKET["P"]].extend(S)
-
     # 重複は基本発生しない想定だが、保険で順序維持のままユニーク化
     for w in range(W):
         if psi[w][BUCKET["P"]]:
             psi[w][BUCKET["P"]] = list(dict.fromkeys(psi[w][BUCKET["P"]]))
-
 # ---------- core: PS->I (FIFO) ----------
 def calc_PS2I_idempotent(psi: List[List[List[str]]]) -> None:
     """
@@ -88,7 +79,6 @@ def calc_PS2I_idempotent(psi: List[List[List[str]]]) -> None:
         psi[w][BUCKET["I"]] = inv
     # w=0 も念のためユニーク化
     psi[0][BUCKET["I"]] = list(dict.fromkeys(psi[0][BUCKET["I"]])) if psi[0][BUCKET["I"]] else []
-
 # ---------- clear helpers ----------
 def clear_buckets(psi: List[List[List[str]]], *, clear_S: bool=False, clear_CO: bool=True, clear_I: bool=True, clear_P: bool=True) -> None:
     """
@@ -101,7 +91,6 @@ def clear_buckets(psi: List[List[List[str]]], *, clear_S: bool=False, clear_CO: 
         if clear_CO: psi[w][BUCKET["CO"]] = []
         if clear_I:  psi[w][BUCKET["I"]]  = []
         if clear_P:  psi[w][BUCKET["P"]]  = []
-
 # ---------- high-level one pass ----------
 def rebuild_node_demand_idempotent(node) -> None:
     """
@@ -117,7 +106,6 @@ def rebuild_node_demand_idempotent(node) -> None:
     clear_buckets(psi, clear_CO=True, clear_I=True, clear_P=True)
     rebuild_P_from_S_idempotent(psi, shift_week, vac)
     calc_PS2I_idempotent(psi)
-
 def rebuild_node_supply_idempotent(node) -> None:
     """
     Nodeの supply 面も同様に再構成（Sは需要コピーが正本）
@@ -129,8 +117,6 @@ def rebuild_node_supply_idempotent(node) -> None:
     clear_buckets(psi, clear_CO=True, clear_I=True, clear_P=True)
     rebuild_P_from_S_idempotent(psi, shift_week, vac)
     calc_PS2I_idempotent(psi)
-
-
 #2) 親S集約の冪等（replace方式を常用）
 #
 #既に提示済みの aggregate_children_P_into_parent_S() を replace_parent_S=True / dedup=True で呼ぶのを“標準”にします。
@@ -147,11 +133,9 @@ def rebuild_node_supply_idempotent(node) -> None:
 #        replace_parent_S=True,  # ← 冪等：Sは再構成
 #        dedup=True, verbose=False
 #    )
-
 ## monkey-patch（初回ロード時に一度だけ）
 #try:
 #    from pysi.network.node_base import PlanNode
 #    PlanNode.calcP2S_idempotent = calcP2S_idempotent
 #except Exception:
 #    pass
-

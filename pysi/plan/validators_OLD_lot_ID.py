@@ -1,22 +1,16 @@
 #psi.plan.validators.py
-
-
 # =========================
 # 6) 追加: バリデーション
 # =========================
-
 # pysi/plan/validators.py
 from __future__ import annotations
 import re
 from typing import Dict, Iterable, List, Optional, Pattern, Tuple, Union
-
-
 def validate_lot_format_all(root, use_strict: bool = False, limit_print: int = 30) -> None:
     """
     lot_id の形式検査。新/旧両対応。use_strict=True で新フォーマットを強制チェック。
     """
     pat = STRICT_LOT_ID_RE if use_strict else DEFAULT_LOT_ID_RE
-
     bad = []
     def _walk(n):
         for w, buckets in enumerate(getattr(n, "psi4demand", []), start=1):
@@ -26,7 +20,6 @@ def validate_lot_format_all(root, use_strict: bool = False, limit_print: int = 3
                         bad.append((n.name, w, b_idx, lot))
         for c in getattr(n, "children", []):
             _walk(c)
-
     _walk(root)
     if bad:
         print(f"[WARN] lot_id format NG count={len(bad)} (show first {limit_print})")
@@ -34,24 +27,18 @@ def validate_lot_format_all(root, use_strict: bool = False, limit_print: int = 3
             print(f"  {i:>3}  {node} w{wk} b{bi}: {lot}")
     else:
         print("[OK] lot_id format verified.")
-
-
-
 # --- デフォルトの LotID ルール: PREFIX + YYYY + WW + NNNN ---
 DEFAULT_LOT_ID_PATTERN = r"^[A-Za-z0-9_]+(?P<year>\d{4})(?P<week>\d{2})(?P<seq>\d{4})$"
 DEFAULT_LOT_ID_RE: Pattern[str] = re.compile(DEFAULT_LOT_ID_PATTERN)
-
 def _iter_tree_nodes(root) -> Iterable[object]:
     stack = [root]
     while stack:
         n = stack.pop()
         yield n
         stack.extend(getattr(n, "children", []) or [])
-
 def _iter_all_nodes(prod_tree_dict: Dict[str, object]) -> Iterable[object]:
     for root in prod_tree_dict.values():
         yield from _iter_tree_nodes(root)
-
 def assert_unique_lot_ids(
     prod_tree_dict: Dict[str, object],
     source: str = "psi4demand",
@@ -79,7 +66,6 @@ def assert_unique_lot_ids(
                 else:
                     seen.add(lot)
     return total, len(dup), dup
-
 def check_lot_id_format(
     prod_tree_dict: Dict[str, object],
     pattern: Optional[Union[str, Pattern[str]]] = None,
@@ -106,9 +92,6 @@ def check_lot_id_format(
                     if limit and len(bad) >= limit:
                         return total, len(bad), bad
     return total, len(bad), bad
-
-
-
 def parse_lot_id(
     lot_id: str,
     pattern: Optional[Union[str, Pattern[str]]] = None,
@@ -127,9 +110,6 @@ def parse_lot_id(
         "week": int(m.group("week")),
         "seq":  int(m.group("seq")),
     }
-
-
-
 def dump_weekly_lots_csv(df_weekly, out_path: str) -> bool:
     """df_weekly が非空のときCSV出力。成功なら True。"""
     try:
@@ -139,4 +119,3 @@ def dump_weekly_lots_csv(df_weekly, out_path: str) -> bool:
         return False
     except Exception:
         return False
-

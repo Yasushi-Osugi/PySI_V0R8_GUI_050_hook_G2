@@ -1,11 +1,8 @@
 #psi_adapter.py
-
 from typing import Dict, Any, Optional
 from engine_api import run_weekly_psi, RunOptions, DEFAULT_KPIS
-
 class EngineNotAvailable(Exception):
     pass
-
 def run_real_engine(scenario_name: str,
                     params: Dict[str, Any],
                     filters: Optional[Dict[str, Any]] = None) -> Dict[str, float]:

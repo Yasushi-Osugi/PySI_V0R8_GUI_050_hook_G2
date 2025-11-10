@@ -1,49 +1,31 @@
 #utils_file_io250114.py
-
-
-
 #以下に、`utils/file_io.py` のコードを生成します。このモジュールは、ファイルの入#出力に関するユーティリティを提供します。
 #
 #```python
 # utils/file_io.py
-
 import pandas as pd
 import os
-
 import csv
-
-
-
 def read_csv_as_dictlist(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         return [row for row in reader]
-
-
-
 def read_csv(filepath):
     with open(filepath, newline='', encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile)
-
         #@STOP
         #next(reader)  # 最初の1行（ヘッダー）をスキップ
-
         data = [row for row in reader]
     return data
-
 ## 使用例
 #csv_data = read_csv('example.csv')
 #for row in csv_data:
 #    print(row)
-
-
 def load_monthly_demand(file_name: str) -> pd.DataFrame:
     """
     Load monthly demand data from a CSV file.
-
     Parameters:
         file_name (str): Path to the CSV file.
-
     Returns:
         pd.DataFrame: Monthly demand data as a DataFrame.
     """
@@ -52,16 +34,11 @@ def load_monthly_demand(file_name: str) -> pd.DataFrame:
     except Exception as e:
         print(f"Error reading file {file_name}: {e}")
         return pd.DataFrame()  # Return an empty DataFrame on error
-
-
-
 def load_cost_table(file_path):
     """
     Load a cost table from a CSV file and return it as a DataFrame.
-
     Parameters:
         file_path (str): Path to the CSV file.
-
     Returns:
         pd.DataFrame: Loaded cost table.
     """
@@ -70,17 +47,12 @@ def load_cost_table(file_path):
     except Exception as e:
         print(f"Error loading cost table: {e}")
         return None
-
-
-
-
+    
 def read_tree_file(file_name):
     """
     Read and parse the tree file.
-
     Parameters:
         file_name (str): The path to the tree file.
-
     Returns:
         list[dict]: List of rows as dictionaries.
     """
@@ -88,42 +60,32 @@ def read_tree_file(file_name):
         reader = csv.DictReader(f)
         return list(reader)
 
-
-
 def load_csv(file_path: str) -> pd.DataFrame:
     """
     Load a CSV file into a pandas DataFrame.
-
     Parameters:
         file_path (str): Path to the CSV file.
-
     Returns:
         pd.DataFrame: Loaded data as a DataFrame.
-
     Raises:
         FileNotFoundError: If the file does not exist.
         IOError: If there is an error reading the file.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
-
     try:
         df = pd.read_csv(file_path)
         print(f"Loaded data from {file_path}, shape: {df.shape}")
         return df
     except Exception as e:
         raise IOError(f"Error reading CSV file {file_path}: {e}")
-
-
 def save_csv(data: pd.DataFrame, file_path: str, index: bool = False):
     """
     Save a pandas DataFrame to a CSV file.
-
     Parameters:
         data (pd.DataFrame): DataFrame to save.
         file_path (str): Path to save the CSV file.
         index (bool): Whether to include the index in the output file.
-
     Raises:
         IOError: If there is an error writing the file.
     """
@@ -132,12 +94,9 @@ def save_csv(data: pd.DataFrame, file_path: str, index: bool = False):
         print(f"Data saved to {file_path}, shape: {data.shape}")
     except Exception as e:
         raise IOError(f"Error writing CSV file {file_path}: {e}")
-
-
 def create_directory(directory_path: str):
     """
     Create a directory if it does not exist.
-
     Parameters:
         directory_path (str): Path to the directory to create.
     """
@@ -146,8 +105,6 @@ def create_directory(directory_path: str):
         print(f"Directory created or already exists: {directory_path}")
     except Exception as e:
         raise IOError(f"Failed to create directory {directory_path}: {e}")
-
-
 #```
 #
 #---
@@ -177,8 +134,3 @@ def create_directory(directory_path: str):
 #
 #
 #
-
-
-
-
-
